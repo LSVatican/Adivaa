@@ -290,3 +290,8 @@ body {
 
 .grid-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; }
 .small-text { font-size: 10px; color: #ffeb3b; margin-top: 5px; }
+
+#google-login-btn img {
+    margin-right: 10px;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.2));
+}
