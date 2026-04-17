@@ -1,7 +1,7 @@
 // --- KONFIGURASI FIREBASE (Ganti dengan milikmu) ---
 const firebaseConfig = {
   apiKey: "AIzaSyASp9AMNVaCmnAOWnrXsq7r53gWvWTeznU",
-  authDomain: "adivaa.vercel.app",
+  authDomain: "adivaa-ae010.firebaseapp.com",
   projectId: "adivaa-ae010",
   storageBucket: "adivaa-ae010.firebasestorage.app",
   messagingSenderId: "330863761504",
