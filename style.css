@@ -295,3 +295,31 @@ body {
     margin-right: 10px;
     filter: drop-shadow(0 0 2px rgba(0,0,0,0.2));
 }
+
+/* Overlay Khusus Captcha */
+.overlay-captcha {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #120512;
+    z-index: 3000; /* Paling tinggi agar menutupi semuanya */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.captcha-card {
+    background: #1a0a1a;
+    padding: 30px;
+    border-radius: 20px;
+    border: 2px solid #ff69b4;
+    text-align: center;
+    box-shadow: 0 0 30px #ff69b4;
+}
+
+.g-recaptcha {
+    margin-top: 20px;
+    display: inline-block;
+    border: 1px solid #ff69b4; /* Stroke pink di sekitar captcha */
+    border-radius: 5px;
+}

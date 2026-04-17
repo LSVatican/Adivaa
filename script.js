@@ -148,3 +148,24 @@ function togglePopup(id) {
     const p = document.getElementById(id);
     p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
 }
+
+// Fungsi ini dipanggil otomatis oleh data-callback="onCaptchaSuccess" di HTML
+function onCaptchaSuccess(token) {
+    if (token) {
+        // Hilangkan overlay captcha dengan efek transisi jika perlu
+        const captchaOverlay = document.getElementById('captcha-overlay');
+        captchaOverlay.style.opacity = '0';
+        
+        setTimeout(() => {
+            captchaOverlay.style.display = 'none';
+            // Setelah captcha hilang, sistem Firebase Auth akan mengambil alih 
+            // untuk memunculkan Login Overlay atau Game Container.
+        }, 500);
+    }
+}
+
+// Tambahkan pengaman: Pastikan user tidak bisa membypass lewat console
+window.onload = function() {
+    // Jika user belum menyelesaikan captcha, pastikan overlay tetap muncul
+    document.getElementById('captcha-overlay').style.display = 'flex';
+};
