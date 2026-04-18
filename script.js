@@ -12,29 +12,33 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Daftar Kelangkaan Pet (Global)
+const petRarities = [
+    { name: "Common", chance: 70, mult: 2 },
+    { name: "Rare", chance: 20, mult: 5 },
+    { name: "Epic", chance: 8, mult: 15 },
+    { name: "Legendary", chance: 2, mult: 50 }
+];
+
 let user = null;
 let gameData = {
     clicks: 0,
     rebirths: 0,
     multiplier: 1,
     upgradeLevel: 0,
-    pets: []
+    pets: [] // Pastikan ini selalu array
 };
 
-// --- AUTH SYSTEM ---
+// --- AUTH ---
 function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(err => alert("Gagal Login: " + err.message));
+    auth.signInWithPopup(provider);
 }
 
-// LOGOUT DENGAN PAKSA SIMPAN DATA
 async function logout() {
     if (user) {
-        // Tampilkan loading sebentar jika perlu
-        await saveData(); // Pastikan data terkirim ke cloud sebelum sign out
-        auth.signOut().then(() => {
-            location.reload();
-        });
+        await saveData();
+        auth.signOut().then(() => location.reload());
     }
 }
 
@@ -43,85 +47,60 @@ auth.onAuthStateChanged(async (u) => {
         user = u;
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
-        
-        // Setup UI Profil
         document.getElementById('user-photo').src = u.photoURL;
         document.getElementById('display-name').innerText = u.displayName;
         document.getElementById('f-user').value = u.email;
-
-        await loadData(); // Ambil data terbaru dari akun Google
+        await loadData();
     } else {
-        document.getElementById('login-overlay').style.display = 'flex';
-        document.getElementById('game-container').style.display = 'none';
+        // Tampilkan login jika captcha sudah selesai
+        if(document.getElementById('captcha-overlay').style.display === 'none') {
+            document.getElementById('login-overlay').style.display = 'flex';
+        }
     }
 });
 
-// --- DATA SINKRONISASI (CORE) ---
-
-// 1. Ambil Data dari Cloud saat Login
+// --- DATA SYSTEM (CLOUD) ---
 async function loadData() {
-    try {
-        const doc = await db.collection("players").doc(user.uid).get();
-        if (doc.exists) {
-            gameData = doc.data();
-            recalcMult(); // Hitung ulang multiplier berdasarkan pet yang dimiliki
-            updateUI();
-        } else {
-            // Jika akun baru, buat data awal di cloud
-            await saveData();
-        }
-    } catch (e) {
-        console.error("Error loading data:", e);
+    const doc = await db.collection("players").doc(user.uid).get();
+    if (doc.exists) {
+        gameData = doc.data();
+        // FIX: Pastikan array pets ada jika data lama tidak punya
+        if (!gameData.pets) gameData.pets = [];
+        recalcMult();
+        updateUI();
+    } else {
+        await saveData();
     }
 }
 
-// 2. Simpan Data ke Cloud
 async function saveData() {
     if (user) {
-        try {
-            await db.collection("players").doc(user.uid).set(gameData);
-        } catch (e) {
-            console.error("Gagal menyimpan ke cloud:", e);
-        }
+        await db.collection("players").doc(user.uid).set(gameData);
     }
 }
 
-// 3. Simpan saat Browser Ditutup / Refresh
-window.addEventListener('beforeunload', (event) => {
-    if (user) {
-        saveData(); // Jalankan penyimpanan terakhir
-    }
-});
+// Simpan saat browser ditutup atau direfresh
+window.onbeforeunload = function() {
+    if (user) saveData();
+};
 
 // --- GAME LOGIC ---
-
 function handleButtonClick(e) {
     const power = (1 + gameData.upgradeLevel) * gameData.multiplier;
     gameData.clicks += power;
-    
     createFloatingText(e.clientX, e.clientY, `+${Math.floor(power)}`);
     updateUI();
-    
-    // Auto-save setiap beberapa klik (Opsional: agar tidak membebani database)
-    if (gameData.clicks % 5 === 0) {
-        saveData();
-    }
+    if (gameData.clicks % 10 === 0) saveData(); // Auto-save tiap 10 klik
 }
 
 function buyUpgrade() {
     const cost = (gameData.upgradeLevel + 1) * 150;
     const max = (gameData.rebirths + 1) * 10;
-
-    if (gameData.upgradeLevel >= max) {
-        alert("Butuh lebih banyak Rebirth!");
-        return;
-    }
-
+    if (gameData.upgradeLevel >= max) return alert("Butuh Rebirth!");
     if (gameData.clicks >= cost) {
         gameData.clicks -= cost;
         gameData.upgradeLevel++;
-        updateUI();
-        saveData(); // Langsung simpan saat upgrade
+        updateUI(); saveData();
     }
 }
 
@@ -130,13 +109,13 @@ function doRebirth() {
     if (gameData.clicks >= cost) {
         gameData.clicks = 0;
         gameData.rebirths++;
-        gameData.upgradeLevel = 0; // Reset upgrade level sesuai simulasi umum
-        updateUI();
-        saveData(); // Langsung simpan saat rebirth
+        gameData.upgradeLevel = 0;
+        updateUI(); saveData();
         togglePopup('rebirth-popup');
     }
 }
 
+// FIX: Fungsi Buy Pet yang diperbaiki
 function buyPet() {
     if (gameData.clicks >= 500) {
         gameData.clicks -= 500;
@@ -153,22 +132,23 @@ function buyPet() {
             }
         }
 
+        // Pastikan array ada sebelum push
+        if (!gameData.pets) gameData.pets = [];
         gameData.pets.push(selected);
+        
         recalcMult();
         updateUI();
-        saveData(); // Simpan koleksi pet baru
-        alert(`Selamat! Anda mendapatkan Pet ${selected.name}!`);
+        saveData(); // Simpan ke Cloud
+        alert(`Dapat Pet: ${selected.name}! Multiplier naik!`);
+    } else {
+        alert("💖 Clicks tidak cukup!");
     }
 }
-
-// --- FUNGSI PENDUKUNG ---
 
 function recalcMult() {
     let m = 1;
     if (gameData.pets) {
-        gameData.pets.forEach(p => {
-            m += p.mult;
-        });
+        gameData.pets.forEach(p => m += p.mult);
     }
     gameData.multiplier = m;
 }
@@ -179,34 +159,29 @@ function updateUI() {
     document.getElementById('multiplier-display').innerText = `Multiplier: x${gameData.multiplier}`;
     
     const upBtn = document.getElementById('upgrade-btn');
-    if(upBtn) {
-        upBtn.innerText = `Upgrade (${((gameData.upgradeLevel + 1) * 150).toLocaleString()} 💖)`;
+    if (upBtn) {
+        upBtn.innerText = `Upgrade (${(gameData.upgradeLevel + 1) * 150} 💖)`;
         document.getElementById('upgrade-info').innerText = `Click Power (Lvl ${gameData.upgradeLevel})`;
-        document.getElementById('upgrade-req').innerText = `Max: ${(gameData.rebirths + 1) * 10} (Berdasarkan Rebirth)`;
+        document.getElementById('upgrade-req').innerText = `Max: ${(gameData.rebirths + 1) * 10} (By Rebirth)`;
     }
-
-    const rbCost = document.getElementById('rebirth-cost');
-    if(rbCost) rbCost.innerText = `Syarat: ${((gameData.rebirths + 1) * 10000).toLocaleString()} 💖`;
-
-    // Render Pets di Inventory
+    
+    document.getElementById('rebirth-cost').innerText = `Syarat: ${((gameData.rebirths + 1) * 10000).toLocaleString()} 💖`;
+    
+    // Render Inventory
     const list = document.getElementById('pet-list');
-    if (list) {
-        list.innerHTML = "";
+    list.innerHTML = "";
+    if (gameData.pets) {
         gameData.pets.forEach(p => {
-            const div = document.createElement('div');
-            div.className = 'stat-box';
-            div.style.fontSize = '8px';
-            div.innerHTML = `${p.name}<br>x${p.mult}`;
-            list.appendChild(div);
+            list.innerHTML += `<div class="stat-box" style="font-size:8px; margin:2px;">${p.name}<br>x${p.mult}</div>`;
         });
     }
 }
 
+// --- UTILS ---
 function createFloatingText(x, y, txt) {
     const el = document.createElement('div');
     el.className = 'floating-text';
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
+    el.style.left = `${x}px`; el.style.top = `${y}px`;
     el.innerText = txt;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 700);
@@ -217,13 +192,9 @@ function togglePopup(id) {
     p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
 }
 
-// reCAPTCHA Callback
 function onCaptchaSuccess(token) {
     if (token) {
-        const captchaOverlay = document.getElementById('captcha-overlay');
-        captchaOverlay.style.opacity = '0';
-        setTimeout(() => {
-            captchaOverlay.style.display = 'none';
-        }, 500);
+        document.getElementById('captcha-overlay').style.display = 'none';
+        if (!user) document.getElementById('login-overlay').style.display = 'flex';
     }
 }

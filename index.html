@@ -6,6 +6,7 @@
     <title>Adivaa - Clicking Simulator</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -13,18 +14,26 @@
 <body>
     <div class="watermark">LS Vatican</div>
 
-    <div id="login-overlay" class="overlay">
-    <div class="login-card">
-        <h1 class="glow-title">Adivaa</h1>
-        <p>Login untuk masuk ke game</p>
-        
-        <button id="google-login-btn" onclick="loginWithGoogle()">
-            <img src="/Google.png" width="20" alt="G"> 
-            Login with Google
-        </button>
-        
+    <div id="captcha-overlay" class="overlay-captcha">
+        <div class="captcha-card">
+            <h2 class="glow-text">Verifikasi Keamanan</h2>
+            <p>Selesaikan captcha untuk bermain</p>
+            <center>
+                <div class="g-recaptcha" data-sitekey="6LdWgrwsAAAAAFUMT2nvee0H27WufaYX-fo9_xrh" data-callback="onCaptchaSuccess" data-theme="dark"></div>
+            </center>
+        </div>
     </div>
-</div>
+
+    <div id="login-overlay" class="overlay" style="display:none;">
+        <div class="login-card">
+            <h1 class="glow-title">Adivaa</h1>
+            <p>Login untuk menyimpan data secara permanen</p>
+            <button id="google-login-btn" onclick="loginWithGoogle()">
+                <img src="/Google.png" width="20" alt="G"> 
+                Login with Google
+            </button>
+        </div>
+    </div>
 
     <div id="game-container" style="display:none;">
         <div class="top-bar">
@@ -94,13 +103,15 @@
 
     <div id="logout-confirm" class="popup"><div class="popup-content">
         <p>Keluar dari game?</p>
-        <button onclick="logout()">Ya</button>
-        <button onclick="togglePopup('logout-confirm')">Tidak</button>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button onclick="logout()">Ya</button>
+            <button onclick="togglePopup('logout-confirm')">Tidak</button>
+        </div>
     </div></div>
 
     <div id="feedback-popup" class="popup"><div class="popup-content">
         <h2>Feedback</h2>
-        <form action="https://formspree.io/f/mojydejl" method="POST">
+        <form action="https://formspree.io/f/YOUR_ID" method="POST">
             <input type="hidden" name="user" id="f-user">
             <textarea name="message" placeholder="Tulis saran atau permintaan hapus akun..." required></textarea>
             <button type="submit">Kirim</button>
@@ -110,18 +121,5 @@
 
     <script src="lang.js"></script>
     <script src="script.js"></script>
-    
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
-<div id="captcha-overlay" class="overlay-captcha">
-    <div class="captcha-card">
-        <h2 class="glow-text">Verifikasi Keamanan</h2>
-        <p>Selesaikan reCAPTCHA untuk melanjutkan ke Adivaa</p>
-        <center>
-            <div class="g-recaptcha" data-sitekey="6LdWgrwsAAAAAFUMT2nvee0H27WufaYX-fo9_xrh" data-callback="onCaptchaSuccess" data-theme="dark"></div>
-        </center>
-    </div>
-</div>
-
 </body>
 </html>
